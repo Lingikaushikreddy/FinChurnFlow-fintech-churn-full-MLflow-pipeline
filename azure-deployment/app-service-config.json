@@ -1,0 +1,37 @@
+{
+  "name": "churn-prediction-api",
+  "location": "East US",
+  "properties": {
+    "serverFarmId": "/subscriptions/YOUR_SUBSCRIPTION_ID/resourceGroups/fintech-ml-rg/providers/Microsoft.Web/serverfarms/churn-prediction-api-plan",
+    "siteConfig": {
+      "linuxFxVersion": "DOCKER|fintechmlregistry.azurecr.io/churn-prediction-api:latest",
+      "alwaysOn": true,
+      "http20Enabled": true,
+      "minTlsVersion": "1.2",
+      "appSettings": [
+        {
+          "name": "WEBSITES_ENABLE_APP_SERVICE_STORAGE",
+          "value": "false"
+        },
+        {
+          "name": "DOCKER_REGISTRY_SERVER_URL",
+          "value": "https://fintechmlregistry.azurecr.io"
+        },
+        {
+          "name": "DOCKER_REGISTRY_SERVER_USERNAME",
+          "value": "fintechmlregistry"
+        },
+        {
+          "name": "DOCKER_REGISTRY_SERVER_PASSWORD",
+          "value": "YOUR_ACR_PASSWORD"
+        },
+        {
+          "name": "MLFLOW_TRACKING_URI",
+          "value": "http://mlflow:5000"
+        }
+      ]
+    },
+    "httpsOnly": true
+  }
+}
+

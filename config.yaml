@@ -1,0 +1,53 @@
+# Configuration file for the churn prediction pipeline
+
+data:
+  raw_data_path: "data/raw/customer_data.csv"
+  processed_data_path: "data/processed/processed_data.parquet"
+  train_data_path: "data/processed/train.parquet"
+  test_data_path: "data/processed/test.parquet"
+  target_column: "churn"
+  test_size: 0.2
+  random_state: 42
+
+model:
+  type: "lightgbm"  # Options: "lightgbm" or "catboost"
+  model_path: "models/churn_model.pkl"
+  
+lightgbm:
+  objective: "binary"
+  metric: "binary_logloss"
+  boosting_type: "gbdt"
+  num_leaves: 31
+  learning_rate: 0.05
+  feature_fraction: 0.9
+  bagging_fraction: 0.8
+  bagging_freq: 5
+  verbose: 0
+  n_estimators: 100
+
+catboost:
+  iterations: 100
+  learning_rate: 0.1
+  depth: 6
+  loss_function: "Logloss"
+  eval_metric: "AUC"
+  verbose: False
+
+mlflow:
+  tracking_uri: "http://localhost:5000"
+  experiment_name: "fintech_churn_prediction"
+  registered_model_name: "churn_prediction_model"
+
+api:
+  host: "0.0.0.0"
+  port: 8000
+  reload: false
+
+deployment:
+  aws:
+    region: "us-east-1"
+    ecr_repository: "fintech-churn-prediction"
+  azure:
+    resource_group: "fintech-ml-rg"
+    container_registry: "fintechmlregistry"
+
