@@ -1,0 +1,256 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: nano_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nano
+      POSTGRES_PASSWORD: nano_secret
+      POSTGRES_DB: nano_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nano -d nano_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: nano_redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  gateway:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: gateway
+    container_name: nano_gateway
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - SERVICE_NAME=gateway
+      - DATABASE_URL=postgresql+asyncpg://nano:nano_secret@postgres:5432/nano_db
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - AUTH_SERVICE_URL=http://auth:8001
+      - PAYMENTS_SERVICE_URL=http://payments:8002
+      - PAYOUTS_SERVICE_URL=http://payouts:8003
+      - STORE_SERVICE_URL=http://store:8004
+      - PAYROLL_SERVICE_URL=http://payroll:8005
+      - AI_SERVICE_URL=http://ai:8006
+      - NOTIFICATIONS_SERVICE_URL=http://notifications:8007
+      - REPORTS_SERVICE_URL=http://reports:8008
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  auth:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: auth
+    container_name: nano_auth
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - SERVICE_NAME=auth
+      - SERVICE_PORT=8001
+      - DATABASE_URL=postgresql+asyncpg://nano:nano_secret@postgres:5432/nano_db
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - OTP_EXPIRY_SECONDS=300
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  payments:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: payments
+    container_name: nano_payments
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    environment:
+      - SERVICE_NAME=payments
+      - SERVICE_PORT=8002
+      - DATABASE_URL=postgresql+asyncpg://nano:nano_secret@postgres:5432/nano_db
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - WEBHOOK_SECRET=webhook-secret-for-payment-callbacks
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  payouts:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: payouts
+    container_name: nano_payouts
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    environment:
+      - SERVICE_NAME=payouts
+      - SERVICE_PORT=8003
+      - DATABASE_URL=postgresql+asyncpg://nano:nano_secret@postgres:5432/nano_db
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  store:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: store
+    container_name: nano_store
+    restart: unless-stopped
+    ports:
+      - "8004:8004"
+    environment:
+      - SERVICE_NAME=store
+      - SERVICE_PORT=8004
+      - DATABASE_URL=postgresql+asyncpg://nano:nano_secret@postgres:5432/nano_db
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  payroll:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: payroll
+    container_name: nano_payroll
+    restart: unless-stopped
+    ports:
+      - "8005:8005"
+    environment:
+      - SERVICE_NAME=payroll
+      - SERVICE_PORT=8005
+      - DATABASE_URL=postgresql+asyncpg://nano:nano_secret@postgres:5432/nano_db
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  ai:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: ai
+    container_name: nano_ai
+    restart: unless-stopped
+    ports:
+      - "8006:8006"
+    environment:
+      - SERVICE_NAME=ai
+      - SERVICE_PORT=8006
+      - DATABASE_URL=postgresql+asyncpg://nano:nano_secret@postgres:5432/nano_db
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - SARVAM_API_KEY=${SARVAM_API_KEY}
+      - SARVAM_MODEL=sarvam-30b
+      - SARVAM_STT_MODEL=saaras:v3
+      - SARVAM_TTS_MODEL=bulbul:v2
+      - SARVAM_TTS_SPEAKER=meera
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  notifications:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: notifications
+    container_name: nano_notifications
+    restart: unless-stopped
+    ports:
+      - "8007:8007"
+    environment:
+      - SERVICE_NAME=notifications
+      - SERVICE_PORT=8007
+      - DATABASE_URL=postgresql+asyncpg://nano:nano_secret@postgres:5432/nano_db
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  reports:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: reports
+    container_name: nano_reports
+    restart: unless-stopped
+    ports:
+      - "8008:8008"
+    environment:
+      - SERVICE_NAME=reports
+      - SERVICE_PORT=8008
+      - DATABASE_URL=postgresql+asyncpg://nano:nano_secret@postgres:5432/nano_db
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  default:
+    name: nano_network

@@ -1,0 +1,278 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: nano_postgres
+    environment:
+      POSTGRES_USER: nano_user
+      POSTGRES_PASSWORD: nano_secret_123
+      POSTGRES_DB: nano_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nano_user -d nano_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nano_network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: nano_redis
+    command: redis-server --appendonly yes --requirepass nano_redis_123
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "nano_redis_123", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nano_network
+
+  # API Gateway Service
+  gateway:
+    build:
+      context: ../backend
+      dockerfile: ../infra/docker/Dockerfile.service
+    container_name: nano_gateway
+    environment:
+      - SERVICE_NAME=gateway
+      - SERVICE_PORT=8000
+      - DATABASE_URL=postgresql://nano_user:nano_secret_123@postgres:5432/nano_db
+      - REDIS_URL=redis://:nano_redis_123@redis:6379/0
+      - JWT_SECRET=super_secret_jwt_key_change_in_production
+      - ENVIRONMENT=development
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../backend:/app
+    command: uvicorn gateway.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - nano_network
+
+  # Auth Service
+  auth:
+    build:
+      context: ../backend
+      dockerfile: ../infra/docker/Dockerfile.service
+    container_name: nano_auth
+    environment:
+      - SERVICE_NAME=auth
+      - SERVICE_PORT=8001
+      - DATABASE_URL=postgresql://nano_user:nano_secret_123@postgres:5432/nano_db
+      - REDIS_URL=redis://:nano_redis_123@redis:6379/0
+      - JWT_SECRET=super_secret_jwt_key_change_in_production
+      - OTP_EXPIRY_MINUTES=10
+      - ACCESS_TOKEN_EXPIRY_MINUTES=15
+      - REFRESH_TOKEN_EXPIRY_DAYS=30
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../backend:/app
+    command: uvicorn auth.main:app --host 0.0.0.0 --port 8001 --reload
+    networks:
+      - nano_network
+
+  # Payments Service
+  payments:
+    build:
+      context: ../backend
+      dockerfile: ../infra/docker/Dockerfile.service
+    container_name: nano_payments
+    environment:
+      - SERVICE_NAME=payments
+      - SERVICE_PORT=8002
+      - DATABASE_URL=postgresql://nano_user:nano_secret_123@postgres:5432/nano_db
+      - REDIS_URL=redis://:nano_redis_123@redis:6379/0
+      - RAZORPAY_KEY_ID=mock_key_id
+      - RAZORPAY_KEY_SECRET=mock_key_secret
+    ports:
+      - "8002:8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../backend:/app
+    command: uvicorn payments.main:app --host 0.0.0.0 --port 8002 --reload
+    networks:
+      - nano_network
+
+  # Payouts Service
+  payouts:
+    build:
+      context: ../backend
+      dockerfile: ../infra/docker/Dockerfile.service
+    container_name: nano_payouts
+    environment:
+      - SERVICE_NAME=payouts
+      - SERVICE_PORT=8003
+      - DATABASE_URL=postgresql://nano_user:nano_secret_123@postgres:5432/nano_db
+      - REDIS_URL=redis://:nano_redis_123@redis:6379/0
+      - RAZORPAYX_KEY_ID=mock_key_id
+      - RAZORPAYX_KEY_SECRET=mock_key_secret
+    ports:
+      - "8003:8003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../backend:/app
+    command: uvicorn payouts.main:app --host 0.0.0.0 --port 8003 --reload
+    networks:
+      - nano_network
+
+  # Store Service
+  store:
+    build:
+      context: ../backend
+      dockerfile: ../infra/docker/Dockerfile.service
+    container_name: nano_store
+    environment:
+      - SERVICE_NAME=store
+      - SERVICE_PORT=8004
+      - DATABASE_URL=postgresql://nano_user:nano_secret_123@postgres:5432/nano_db
+      - REDIS_URL=redis://:nano_redis_123@redis:6379/0
+    ports:
+      - "8004:8004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../backend:/app
+    command: uvicorn store.main:app --host 0.0.0.0 --port 8004 --reload
+    networks:
+      - nano_network
+
+  # Payroll Service
+  payroll:
+    build:
+      context: ../backend
+      dockerfile: ../infra/docker/Dockerfile.service
+    container_name: nano_payroll
+    environment:
+      - SERVICE_NAME=payroll
+      - SERVICE_PORT=8005
+      - DATABASE_URL=postgresql://nano_user:nano_secret_123@postgres:5432/nano_db
+      - REDIS_URL=redis://:nano_redis_123@redis:6379/0
+    ports:
+      - "8005:8005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../backend:/app
+    command: uvicorn payroll.main:app --host 0.0.0.0 --port 8005 --reload
+    networks:
+      - nano_network
+
+  # AI Service
+  ai:
+    build:
+      context: ../backend
+      dockerfile: ../infra/docker/Dockerfile.service
+    container_name: nano_ai
+    environment:
+      - SERVICE_NAME=ai
+      - SERVICE_PORT=8006
+      - DATABASE_URL=postgresql://nano_user:nano_secret_123@postgres:5432/nano_db
+      - REDIS_URL=redis://:nano_redis_123@redis:6379/0
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    ports:
+      - "8006:8006"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../backend:/app
+    command: uvicorn ai.main:app --host 0.0.0.0 --port 8006 --reload
+    networks:
+      - nano_network
+
+  # Notifications Service
+  notifications:
+    build:
+      context: ../backend
+      dockerfile: ../infra/docker/Dockerfile.service
+    container_name: nano_notifications
+    environment:
+      - SERVICE_NAME=notifications
+      - SERVICE_PORT=8007
+      - DATABASE_URL=postgresql://nano_user:nano_secret_123@postgres:5432/nano_db
+      - REDIS_URL=redis://:nano_redis_123@redis:6379/0
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID:-}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN:-}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER:-}
+    ports:
+      - "8007:8007"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../backend:/app
+    command: uvicorn notifications.main:app --host 0.0.0.0 --port 8007 --reload
+    networks:
+      - nano_network
+
+  # Reports Service
+  reports:
+    build:
+      context: ../backend
+      dockerfile: ../infra/docker/Dockerfile.service
+    container_name: nano_reports
+    environment:
+      - SERVICE_NAME=reports
+      - SERVICE_PORT=8008
+      - DATABASE_URL=postgresql://nano_user:nano_secret_123@postgres:5432/nano_db
+      - REDIS_URL=redis://:nano_redis_123@redis:6379/0
+    ports:
+      - "8008:8008"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../backend:/app
+    command: uvicorn reports.main:app --host 0.0.0.0 --port 8008 --reload
+    networks:
+      - nano_network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  nano_network:
+    driver: bridge

@@ -1,0 +1,121 @@
+{
+    "meta": {
+        "version": "1.0",
+        "target_market": "Indian SME / Kirana Market (Tier 2/3 Cities)",
+        "goal": "Build the lightest, fastest, and most trusted business OS for Android."
+    },
+    "core_philosophy": {
+        "principle": "Zero Friction",
+        "context": "In India, apps taking >5s to open or >50MB data get uninstalled.",
+        "golden_rule": "Must work on a ₹5,000 phone with 2G network flexibility."
+    },
+    "technical_commandments": [
+        {
+            "name": "The 15MB Challenge",
+            "requirement": "Production APK size < 15MB",
+            "strategies": [
+                "Enable ProGuard / R8 Resource Shrinking aggressively",
+                "Use Hermes Engine for smaller JS bundle size",
+                "Convert all assets to WebP",
+                "Dynamic delivery for non-critical features"
+            ]
+        },
+        {
+            "name": "Offline-First Architecture",
+            "requirement": "Fully functional without internet",
+            "tech_stack": "WatermelonDB (SQLite wrapper)",
+            "behavior": {
+                "write": "Immediate local write for Sales, Attendance, Invoices",
+                "sync": "Background WorkManager job syncs on connectivity restoration",
+                "indicator": "Non-intrusive 'Offline Mode' banner"
+            }
+        },
+        {
+            "name": "Performance Metrics",
+            "cold_start": "< 1.5 seconds",
+            "frame_rate": "Consistent 60fps on Snapdragon 4-series / MediaTek Helio G-series",
+            "memory_heap": "< 150MB"
+        }
+    ],
+    "market_features": [
+        {
+            "name": "Vernacular Voice Interface (Nano Voice)",
+            "overview": "Replace typing with speaking",
+            "languages": [
+                "Hindi",
+                "Tamil",
+                "Telugu",
+                "Marathi",
+                "Hinglish"
+            ],
+            "use_case_example": {
+                "voice_input": "Ramesh ko 500 rupay advance diya",
+                "action": "Creates 'Salary Advance' entry for employee 'Ramesh' for ₹500"
+            },
+            "integration": "Google Speech Recognition API -> App Intents"
+        },
+        {
+            "name": "One-Tap SMS & WhatsApp Integration",
+            "features": [
+                {
+                    "name": "SMS Retriever API",
+                    "benefit": "Auto-read OTPs. Zero manual entry."
+                },
+                {
+                    "name": "WhatsApp Deep Linking",
+                    "benefit": "Lowers trust barrier",
+                    "examples": [
+                        "Send Payment Link -> Opens WhatsApp with pre-filled message",
+                        "Send Salary Slip -> Opens WhatsApp with PDF attached"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Khata Ledger Sync",
+            "requirement": "Auto-backup of ledger data",
+            "trust_feature": "Daily automated PDF report sent to Merchant's WhatsApp at 9 PM"
+        }
+    ],
+    "ui_guidelines": {
+        "typography": "Google Fonts (Noto Sans), min 14sp",
+        "navigation": "Bottom Navigation Bar (Thumb zone)",
+        "visuals": {
+            "style": "High contrast",
+            "colors": {
+                "money_in": "Green",
+                "money_out": "Red"
+            }
+        }
+    },
+    "development_roadmap": {
+        "sprint_1": {
+            "focus": "The Foundation (Week 1-2)",
+            "tasks": [
+                "Setup WatermelonDB",
+                "Configure Hermes & ProGuard",
+                "Implement SMS Retriever API"
+            ]
+        },
+        "sprint_2": {
+            "focus": "The Core Loop (Week 3-4)",
+            "tasks": [
+                "Build Background Sync (WorkManager)",
+                "Implement WhatsApp Intent sharing",
+                "Optimize Cold Start time"
+            ]
+        },
+        "sprint_3": {
+            "focus": "The Magic (Week 5-6)",
+            "tasks": [
+                "Integrate Voice-to-Action floating button",
+                "Add Language Switcher toggle"
+            ]
+        }
+    },
+    "success_metrics": {
+        "retention_day_30": "> 40%",
+        "daily_active_users": "> 5 opens per day",
+        "crash_rate": "< 0.2%"
+    }
+}
